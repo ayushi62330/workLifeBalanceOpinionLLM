@@ -42,7 +42,7 @@ jobs:
           python main_pipeline.py
       
       - name: Upload opinions.json artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: opinions-json
           path: opinions.json
@@ -52,7 +52,7 @@ jobs:
           python monitoring.py
       
       - name: Upload dashboard artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dashboard-html
           path: dashboard.html
