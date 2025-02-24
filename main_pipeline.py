@@ -105,9 +105,9 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     
     # Invoke the Bedrock model using correct, lower-case parameter names
     bedrock_response = bedrock_client.invoke_model(
-        "modelId": "amazon.titan-text-lite-v1",
-        "body":"body.encode("utf-8")",
-        "contentType":"application/json"
+    modelId="amazon.titan-text-lite-v1",
+    body=body.encode("utf-8"),
+    contentType="application/json"
     )
     
     raw_response_str = bedrock_response["Body"].read().decode("utf-8")
