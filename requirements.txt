@@ -1,0 +1,10 @@
+tweepy
+requests
+beautifulsoup4
+sentence-transformers
+chromadb
+pytest
+python-dotenv
+# Optional (for monitoring and AWS integrations):
+datapane
+boto3
