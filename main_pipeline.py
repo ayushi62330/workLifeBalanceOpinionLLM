@@ -99,9 +99,9 @@ Text: "{text}"
 """
     # Invoke the Bedrock model
     bedrock_response = bedrock_client.invoke_model(
-        ModelId="amazon.titan-text-express-v1",  # Replace with your actual Bedrock model ID
-        Body=prompt.encode("utf-8"),
-        ContentType="application/json"
+        modelId="amazon.titan-text-express-v1",  # Replace with your actual Bedrock model ID
+        body=prompt.encode("utf-8"),
+        contentType="application/json"
     )
     raw_response_str = bedrock_response["Body"].read().decode("utf-8")
     try:
