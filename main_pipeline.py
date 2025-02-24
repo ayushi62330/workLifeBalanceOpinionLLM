@@ -87,7 +87,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     Each value must be an integer between 1 (low) and 5 (high).
     """
     # Initialize the Bedrock client
-    bedrock_client = boto3.client("bedrock-runtime")
+    bedrock_client = boto3.client("bedrock-runtime",region_name="ap-south-1")
     
     # Construct the prompt
     prompt = f"""
