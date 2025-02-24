@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
 from chromadb import Client  # Ensure chromadb is installed via pip
 from dotenv import load_dotenv
+import boto3
 
 # Load environment variables (e.g., from .env)
 load_dotenv()
@@ -70,12 +71,13 @@ def quantify_opinion_simulated(text: str) -> dict:
     }
 
 # (2) Amazon Bedrock Integration with Guardrails using create_guardrail
-import boto3
+
+
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     """
     Uses Amazon Bedrock to generate opinion scores and then validates the output
-    using the built-in Guardrail API (via create_guardrail).
+    using the built-in Guardrail API (create_guardrail).
 
     The prompt instructs the model to return a JSON object with exactly these keys:
       - work_flexibility
@@ -86,31 +88,35 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
 
     Each value must be an integer between 1 (low) and 5 (high).
     """
-    # Initialize the Bedrock client
-    bedrock_client = boto3.client("bedrock-runtime",region_name="ap-south-1")
+    # Initialize the Bedrock client with a specified region
+    bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
     
-    # Construct the prompt
-    prompt = f"""
-Analyze the following text regarding work-life balance.
-Return a JSON object with exactly these keys:
-  "work_flexibility", "burnout_risk", "remote_work_appeal", "productivity_impact", "overall_sentiment".
-Each value must be an integer between 1 and 5.
-Text: "{text}"
-"""
-    # Invoke the Bedrock model
+    # Construct the prompt as a single-line string and wrap it in a JSON object
+    prompt_text = (
+        "Analyze the following text regarding work-life balance. "
+        "Return a JSON object with exactly these keys: "
+        "\"work_flexibility\", \"burnout_risk\", \"remote_work_appeal\", "
+        "\"productivity_impact\", \"overall_sentiment\". "
+        "Each value must be an integer between 1 and 5. "
+        f"Text: \"{text}\""
+    )
+    # Wrap the prompt in a JSON object
+    body = json.dumps({"prompt": prompt_text})
+    
+    # Invoke the Bedrock model using correct, lower-case parameter names
     bedrock_response = bedrock_client.invoke_model(
-        modelId="amazon.titan-text-express-v1",  # Replace with your actual Bedrock model ID
-        body=prompt.encode("utf-8"),
+        modelId="your-bedrock-model-id",  # Replace with your actual model ID
+        body=body.encode("utf-8"),
         contentType="application/json"
     )
+    
     raw_response_str = bedrock_response["Body"].read().decode("utf-8")
     try:
         raw_response = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON response from Bedrock: {raw_response_str}") from e
 
-    # Use the built-in Guardrail API to validate the output
-    # This uses the create_guardrail API available on the Bedrock client.
+    # Define guardrail parameters for validation
     guardrail_params = {
         "desired_keys": [
             "work_flexibility",
@@ -122,10 +128,11 @@ Text: "{text}"
         "value_range": {"min": 1, "max": 5}
     }
     
+    # Validate using the built-in Guardrail API
     guard_response = bedrock_client.create_guardrail(
-        ModelOutput=json.dumps(raw_response),
-        GuardrailParameters=json.dumps(guardrail_params),
-        ContentType="application/json"
+        modelOutput=json.dumps(raw_response),
+        guardrailParameters=json.dumps(guardrail_params),
+        contentType="application/json"
     )
     guard_response_str = guard_response["Body"].read().decode("utf-8")
     try:
@@ -134,6 +141,7 @@ Text: "{text}"
         raise ValueError(f"Invalid JSON from Guardrails API: {guard_response_str}") from e
 
     return validated_response
+
 
 # For production, assign the Bedrock-based function:
 quantify_opinion = quantify_opinion_bedrock_with_guardrails
