@@ -138,7 +138,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     
     # Validate using the built-in Guardrail API
     print(dir(bedrock_client))
-    guard_response = bedrock_client.create_guardrail(
+    guard_response = bedrock_client.apply_guardrail(
         modelOutput=json.dumps(raw_response),
         guardrailParameters=json.dumps(guardrail_params),
         contentType="application/json"
