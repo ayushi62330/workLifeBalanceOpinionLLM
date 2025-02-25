@@ -58,9 +58,10 @@ def embed_and_store(texts, collection_name: str):
     """Embed texts with a Sentence Transformer and store them in ChromaDB."""
     embeddings = model.encode(texts)
     collection = chroma_client.get_or_create_collection(name=collection_name)
-    for text, embedding in zip(texts, embeddings):
-        collection.add(document=text, embedding=embedding)
+    # Add all documents at once
+    collection.add(documents=texts, embeddings=embeddings)
     logging.info(f"Stored {len(texts)} documents in collection '{collection_name}'.")
+
 
 # === Opinion Quantification Functions ===
 
