@@ -18,3 +18,4 @@ def test_ingest_article(monkeypatch):
     monkeypatch.setattr("requests.get", dummy_get)
     article = ingest_article("http://dummy.url")
     assert "This is a test article." in article
+    
