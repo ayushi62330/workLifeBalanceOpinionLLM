@@ -159,8 +159,8 @@ quantify_opinion = quantify_opinion_bedrock_with_guardrails
 def pipeline():
     # Step 1: Ingest tweets about "work-life balance"
     query = "work-life balance"
-    tweets = ingest_tweets(query)
-    embed_and_store(tweets, collection_name="tweets_worklife")
+    #tweets = ingest_tweets(query)
+    #embed_and_store(tweets, collection_name="tweets_worklife")
     
     # Step 2: Ingest an article (replace URL with a valid one for production)
     article_url = "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement"
@@ -168,15 +168,17 @@ def pipeline():
     embed_and_store([article_text], collection_name="articles_worklife")
     
     # Step 3: Quantify opinions for each tweet and for the article
-    tweet_opinions = [quantify_opinion(tweet) for tweet in tweets]
+    #tweet_opinions = [quantify_opinion(tweet) for tweet in tweets]
     article_opinion = quantify_opinion(article_text)
     
     # Step 4: Save the quantified opinions to a JSON file
-    with open("opinions.json", "w") as f:
-        json.dump({"tweets": tweet_opinions, "article": article_opinion}, f, indent=2)
+    #with open("opinions.json", "w") as f:
+        #json.dump({"tweets": tweet_opinions, "article": article_opinion}, f, indent=2)
     
     logging.info("Pipeline complete.")
-    return tweet_opinions, article_opinion
+    print(article_opinion)
+    #return tweet_opinions, article_opinion
+    return
 
 if __name__ == "__main__":
     pipeline()
