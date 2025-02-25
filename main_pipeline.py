@@ -117,7 +117,8 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     contentType="application/json"
     )
     print(bedrock_response)
-    raw_response_str = bedrock_response["Body"].read().decode("utf-8")
+    raw_response_str = bedrock_response["body"].read().decode("utf-8")
+    print(raw_response_str)
     try:
         raw_response = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
