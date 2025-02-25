@@ -174,7 +174,7 @@ def pipeline():
     # List of article URLs to ingest.
     article_urls = [
         "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement",
-        https://thehappinessindex.com/blog/importance-work-life-balance/,
+        "https://thehappinessindex.com/blog/importance-work-life-balance/",
     ]
     
     articles_texts = []
