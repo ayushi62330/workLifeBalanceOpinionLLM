@@ -13,57 +13,54 @@ def load_opinions(file_path="opinions.json"):
         data = json.load(f)
     return data
 
-def compute_article_metrics(articles: list) -> pd.DataFrame:
+def compute_dataframe(opinions, stage: str) -> pd.DataFrame:
     """
-    Compute metrics for each article in the provided list.
-    Each article is expected to be a dictionary with keys:
-      - work_flexibility, burnout_risk, remote_work_appeal, productivity_impact, overall_sentiment
-    Optionally, it may contain extra keys.
-    Returns a DataFrame with one row per article.
+    Convert a list of opinion objects into a Pandas DataFrame and add a 'Stage' column.
+    If opinions is a single dictionary, wrap it into a list.
     """
-    records = []
-    for idx, article in enumerate(articles):
-        record = {
-            "Article": f"Article {idx+1}",
-            "work_flexibility": article.get("work_flexibility"),
-            "burnout_risk": article.get("burnout_risk"),
-            "remote_work_appeal": article.get("remote_work_appeal"),
-            "productivity_impact": article.get("productivity_impact"),
-            "overall_sentiment": article.get("overall_sentiment"),
-            "generation": article.get("generation", ""),
-            "prompt_token_count": article.get("prompt_token_count"),
-            "generation_token_count": article.get("generation_token_count"),
-            "stop_reason": article.get("stop_reason")
-        }
-        records.append(record)
-    df = pd.DataFrame(records)
+    if not isinstance(opinions, list):
+        opinions = [opinions]
+    df = pd.DataFrame(opinions)
+    df["Stage"] = stage
     return df
 
 def create_dashboard_dynamic(file_path="opinions.json"):
     """
-    Generate an enhanced HTML dashboard summarizing article metrics.
+    Generate an integrated HTML dashboard for the entire application.
     The dashboard includes:
-      - A table with key metrics for each article.
-      - A bar chart showing overall sentiment for each article.
+      - A combined table of opinion metrics for tweets and articles.
+      - An interactive bar chart showing overall sentiment by stage.
     """
     data = load_opinions(file_path)
-    if data is None or "articles" not in data:
-        print("No article data found in opinions.json under 'articles' key.")
+    if data is None:
+        print("No opinions data found.")
         return
 
-    articles = data["articles"]
-    df = compute_article_metrics(articles)
+    dfs = []
+    if "tweets" in data and data["tweets"]:
+        df_tweets = compute_dataframe(data["tweets"], "Tweets")
+        dfs.append(df_tweets)
+    if "articles" in data and data["articles"]:
+        df_articles = compute_dataframe(data["articles"], "Articles")
+        dfs.append(df_articles)
     
-    # Create an interactive bar chart for overall sentiment
-    fig = px.bar(df, x="Article", y="overall_sentiment",
-                 title="Overall Sentiment per Article",
+    if dfs:
+        df_all = pd.concat(dfs, ignore_index=True)
+    else:
+        print("No opinion data available.")
+        return
+
+    # Create a bar chart of average overall sentiment by stage.
+    sentiment_df = df_all.groupby("Stage", as_index=False)["overall_sentiment"].mean()
+    fig = px.bar(sentiment_df, x="Stage", y="overall_sentiment",
+                 title="Average Overall Sentiment by Stage",
                  labels={"overall_sentiment": "Overall Sentiment (1-5)"})
     
-    # Build the Datapane report with a table and the bar chart
+    # Build the Datapane report with a text title, table, and bar chart.
     report = dp.Report(
-        dp.Markdown("# Article Metrics Dashboard"),
-        dp.Table(df, caption="Detailed Article Metrics"),
-        dp.Plot(fig, caption="Overall Sentiment per Article")
+        dp.Text("# Integrated Monitoring Dashboard"),
+        dp.Table(df_all, caption="Opinion Metrics for Tweets and Articles"),
+        dp.Plot(fig, caption="Average Overall Sentiment by Stage")
     )
     report.save(path="dashboard.html", open=True)
     print("Dashboard generated and saved as dashboard.html")
