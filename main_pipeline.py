@@ -37,7 +37,7 @@ def ingest_tweets(query: str, max_results: int = 50):
     Ingest tweets matching a query using Twitter API v2 Recent Search endpoint.
     Requires TWITTER_BEARER_TOKEN to be set.
     """
-    response = twitter_client.search_recent_tweets(query=query, max_results=max_results)
+    response = twitter_api.search_recent_tweets(query=query, max_results=max_results)
     tweet_texts = []
     if response.data:
         tweet_texts = [tweet.text for tweet in response.data]
