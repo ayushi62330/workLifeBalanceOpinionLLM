@@ -179,13 +179,13 @@ def pipeline():
     article_opinion = quantify_opinion(article_text)
     
     # Step 4: Save the quantified opinions to a JSON file
-    #with open("opinions.json", "w") as f:
-        #json.dump({"tweets": tweet_opinions, "article": article_opinion}, f, indent=2)
+    with open("opinions.json", "w") as f:
+        json.dump({"article": article_opinion}, f, indent=2)
     
     logging.info("Pipeline complete.")
     print(article_opinion)
     #return tweet_opinions, article_opinion
-    return
+    return article_opinion
 
 if __name__ == "__main__":
     pipeline()
