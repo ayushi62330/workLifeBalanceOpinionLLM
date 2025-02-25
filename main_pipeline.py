@@ -141,11 +141,12 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raise ValueError(f"InvokeModel response missing 'body': {bedrock_response}")
     
     raw_response_str = bedrock_response["body"].read().decode("utf-8")
+    print("raw_response_str",raw_response_str)
     try:
         raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
-
+    print("raw_input",raw_input)
     # Extract the pure JSON from the generation output.
     try:
         cleaned_output = extract_json_from_generation(raw_output)
