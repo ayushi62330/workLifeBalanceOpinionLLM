@@ -164,28 +164,47 @@ quantify_opinion = quantify_opinion_bedrock_with_guardrails
 
 # === Main Pipeline Function ===
 def pipeline():
-    # Step 1: Ingest tweets about "work-life balance"
-    query = "work-life balance"
-    #tweets = ingest_tweets(query)
-    #embed_and_store(tweets, collection_name="tweets_worklife")
+    """
+    Run the full pipeline:
+      - Ingest a list of articles.
+      - Generate embeddings and store them in ChromaDB.
+      - Quantify opinions for each article.
+      - Save results to 'opinions.json' in the expected format.
+    """
+    # List of article URLs to ingest.
+    article_urls = [
+        "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement",
+        https://thehappinessindex.com/blog/importance-work-life-balance/,
+    ]
     
-    # Step 2: Ingest an article (replace URL with a valid one for production)
-    article_url = "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement"
-    article_text = ingest_article(article_url)
-    embed_and_store([article_text], collection_name="articles_worklife")
+    articles_texts = []
+    for url in article_urls:
+        try:
+            text = ingest_article(url)
+            articles_texts.append(text)
+        except Exception as e:
+            logger.error("Error processing article %s: %s", url, e)
     
-    # Step 3: Quantify opinions for each tweet and for the article
-    #tweet_opinions = [quantify_opinion(tweet) for tweet in tweets]
-    article_opinion = quantify_opinion(article_text)
-    
-    # Step 4: Save the quantified opinions to a JSON file
-    with open("opinions.json", "w") as f:
-        json.dump({"article": article_opinion}, f, indent=2)
-    
-    logging.info("Pipeline complete.")
-    print(article_opinion)
-    #return tweet_opinions, article_opinion
-    return article_opinion
+    if articles_texts:
+        embed_and_store(articles_texts, collection_name="articles_worklife")
+        articles_opinions = [quantify_opinion(text) for text in articles_texts]
+    else:
+        articles_opinions = []
+
+    # Expected output format: a JSON object with an "articles" key containing a list of analysis objects.
+    output = {
+        "articles": articles_opinions
+    }
+    try:
+        with open("opinions.json", "w") as f:
+            json.dump(output, f, indent=2)
+    except Exception as e:
+        logger.error("Error writing opinions.json: %s", e)
+        raise
+
+    logger.info("Pipeline complete.")
+    print("Final output:", output)
+    return output
 
 if __name__ == "__main__":
     pipeline()
