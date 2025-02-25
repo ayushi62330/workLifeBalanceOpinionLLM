@@ -126,7 +126,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     print(raw_response)
     try:
     # Define guardrail parameters for validation
-    guardrail_params = {
+      guardrail_params = {
         "desired_keys": [
             "work_flexibility",
             "burnout_risk",
