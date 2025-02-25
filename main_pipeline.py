@@ -123,7 +123,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raw_response = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON response from Bedrock: {raw_response_str}") from e
-    print(raw_response_str)
+    print(raw_response)
     try:
     # Define guardrail parameters for validation
     guardrail_params = {
