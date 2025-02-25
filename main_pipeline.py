@@ -77,25 +77,6 @@ def quantify_opinion_simulated(text: str) -> dict:
         "overall_sentiment": 4
     }
 
-# (2) Amazon Bedrock Integration with Guardrails using create_guardrail
-
-def extract_json_from_generation(raw_output: dict) -> dict:
-    """
-    If the output has a 'generation' key containing extra text,
-    extract the substring between the first '{' and the last '}' and parse it.
-    """
-    if "generation" in raw_output:
-        gen_str = raw_output["generation"]
-        start = gen_str.find('{')
-        end = gen_str.rfind('}')
-        if start == -1 or end == -1:
-            raise ValueError("Could not find JSON object in generation string.")
-        json_str = gen_str[start:end+1]
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            raise ValueError("Error parsing JSON from generation string: " + json_str) from e
-    return raw_output
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     """
@@ -147,14 +128,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
     print("raw_output",raw_output)
-    # Extract the pure JSON from the generation output.
-    try:
-        cleaned_output = extract_json_from_generation(raw_output)
-    except Exception as e:
-        logger.error("Error extracting JSON: %s", e)
-        raise
-    print(cleaned_output)
-    return cleaned_output
+    return raw_output
     
 
 # For production, assign the Bedrock-based function:
