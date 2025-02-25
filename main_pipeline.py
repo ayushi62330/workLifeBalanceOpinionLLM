@@ -8,14 +8,12 @@ from sentence_transformers import SentenceTransformer
 from chromadb import Client  # Ensure chromadb is installed via pip
 from dotenv import load_dotenv
 import boto3
-import re
 
 # Load environment variables (e.g., from .env)
 load_dotenv()
 
-# Configure logging (define logger globally)
+# Set up logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # === Twitter API Setup ===
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
@@ -34,7 +32,7 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 chroma_client = Client()  # Assumes a local/default configuration
 
 # === Data Ingestion Functions ===
-def ingest_tweets(query: str, max_results: int = 11):
+def ingest_tweets(query: str, max_results: int = 50):
     """
     Ingest tweets matching a query using Twitter API v2 Recent Search endpoint.
     Requires TWITTER_BEARER_TOKEN to be set.
@@ -79,7 +77,8 @@ def quantify_opinion_simulated(text: str) -> dict:
         "overall_sentiment": 4
     }
 
-# Helper: Extract JSON object from a generation string.
+# (2) Amazon Bedrock Integration with Guardrails using create_guardrail
+
 def extract_json_from_generation(raw_output: dict) -> dict:
     """
     If the output has a 'generation' key containing extra text,
@@ -97,9 +96,6 @@ def extract_json_from_generation(raw_output: dict) -> dict:
         except json.JSONDecodeError as e:
             raise ValueError("Error parsing JSON from generation string: " + json_str) from e
     return raw_output
-  
-
-  
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     """
@@ -143,21 +139,22 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
 
     if "body" not in bedrock_response:
         raise ValueError(f"InvokeModel response missing 'body': {bedrock_response}")
+    
     raw_response_str = bedrock_response["body"].read().decode("utf-8")
+    print("raw_response_str",raw_response_str)
     try:
         raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
-
+    print("raw_output",raw_output)
     # Extract the pure JSON from the generation output.
     try:
         cleaned_output = extract_json_from_generation(raw_output)
     except Exception as e:
         logger.error("Error extracting JSON: %s", e)
         raise
-
+    print(cleaned_output)
     return cleaned_output
-    
     
 
 # For production, assign the Bedrock-based function:
@@ -180,17 +177,15 @@ def pipeline():
     # Step 3: Quantify opinions for each tweet and for the article
     #tweet_opinions = [quantify_opinion(tweet) for tweet in tweets]
     article_opinion = quantify_opinion(article_text)
-  
     
     # Step 4: Save the quantified opinions to a JSON file
-    with open("opinions.json", "w") as f:
-        json.dump({ "article": article_opinion}, f, indent=2)
+    #with open("opinions.json", "w") as f:
+        #json.dump({"tweets": tweet_opinions, "article": article_opinion}, f, indent=2)
     
     logging.info("Pipeline complete.")
     print(article_opinion)
     #return tweet_opinions, article_opinion
-    return article_opinion
-    
+    return
 
 if __name__ == "__main__":
     pipeline()
