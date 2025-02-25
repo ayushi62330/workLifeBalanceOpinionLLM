@@ -12,63 +12,40 @@ def load_opinions(file_path="opinions.json"):
         data = json.load(f)
     return data
 
-def compute_metrics(data):
+def compute_article_metrics(articles: list) -> list:
     """
-    Compute dynamic metrics from the opinions data.
-    
-    Expected JSON structure:
-    {
-      "tweets": [
-         { "work_flexibility": int, "burnout_risk": int, "remote_work_appeal": int,
-           "productivity_impact": int, "overall_sentiment": int },
-         ...
-      ],
-      "article": { "work_flexibility": int, "burnout_risk": int, "remote_work_appeal": int,
-                   "productivity_impact": int, "overall_sentiment": int }
-    }
+    Compute metrics for each article in the provided list.
+    Each article is expected to be a dictionary with keys:
+      - work_flexibility, burnout_risk, remote_work_appeal, productivity_impact, overall_sentiment
+    Optionally, it may contain extra keys (e.g., generation, token counts, etc.).
+    Returns a list of dictionaries, one per article, with a 'Stage' label added.
     """
-    metrics = []
+    metrics_list = []
+    numeric_keys = ["work_flexibility", "burnout_risk", "remote_work_appeal", "productivity_impact", "overall_sentiment"]
+    extra_keys = ["generation", "prompt_token_count", "generation_token_count", "stop_reason"]
     
-    # Process article
-    article = data.get("article", {})
-    if article:
-        metrics.append({
-            "Stage": "Article",
-            "Count": 1,
-            **article
-        })
-    else:
-        metrics.append({
-            "Stage": "Article",
-            "Count": 0,
-            "work_flexibility": 0,
-            "burnout_risk": 0,
-            "remote_work_appeal": 0,
-            "productivity_impact": 0,
-            "overall_sentiment": 0
-        })
-    return metrics
+    for idx, article in enumerate(articles):
+        article_metrics = {"Stage": f"Article {idx+1}", "Count": 1}
+        for key in numeric_keys:
+            article_metrics[key] = article.get(key, None)
+        for key in extra_keys:
+            article_metrics[key] = article.get(key, None)
+        metrics_list.append(article_metrics)
+    return metrics_list
 
 def create_dashboard_dynamic(file_path="opinions.json"):
+    """
+    Generate an HTML dashboard summarizing metrics for all articles.
+    """
     data = load_opinions(file_path)
-    
-    if data is None:
-        metrics_data = [
-            {
-                "Stage": "Article",
-                "Count": 0,
-                "work_flexibility": 0,
-                "burnout_risk": 0,
-                "remote_work_appeal": 0,
-                "productivity_impact": 0,
-                "overall_sentiment": 0
-            }
-        ]
-    else:
-        metrics_data = compute_metrics(data)
-    
+    if data is None or "articles" not in data:
+        print("No article data found in opinions.json under 'articles' key.")
+        return
+
+    articles = data["articles"]
+    metrics_data = compute_article_metrics(articles)
     df = pd.DataFrame(metrics_data)
-    report = dp.Report(dp.Table(df, caption="Dynamic Pipeline Metrics"))
+    report = dp.Report(dp.Table(df, caption="Article Metrics"))
     report.save(path="dashboard.html", open=True)
     print("Dashboard generated and saved as dashboard.html")
 
