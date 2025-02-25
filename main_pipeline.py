@@ -96,7 +96,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     Each value must be an integer between 1 (low) and 5 (high).
     """
     # Initialize the Bedrock client with a specified region
-    bedrock_client = boto3.client("bedrock", region_name="ap-south-1")
+    bedrock_client = boto3.client("bedrock-runtime", region_name="ap-south-1")
     
     # Construct the prompt as a single-line string and wrap it in a JSON object
     prompt_text = (
@@ -123,7 +123,8 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raw_response = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON response from Bedrock: {raw_response_str}") from e
-
+    print(raw_response_str)
+    try:
     # Define guardrail parameters for validation
     guardrail_params = {
         "desired_keys": [
@@ -138,7 +139,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     
     # Validate using the built-in Guardrail API
     print(dir(bedrock_client))
-    guard_response = bedrock_client.create_guardrail(
+    guard_response = bedrock_client.apply_guardrail(
         modelOutput=json.dumps(raw_response),
         guardrailParameters=json.dumps(guardrail_params),
         contentType="application/json"
