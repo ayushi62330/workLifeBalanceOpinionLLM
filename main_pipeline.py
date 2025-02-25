@@ -14,7 +14,7 @@ load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
-
+logger = logging.getLogger(__name__)
 # === Twitter API Setup ===
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
