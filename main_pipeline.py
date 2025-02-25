@@ -77,6 +77,25 @@ def quantify_opinion_simulated(text: str) -> dict:
         "overall_sentiment": 4
     }
 
+def extract_json_from_generation(raw_output: dict) -> dict:
+    """
+    Extract a JSON object from the 'generation' string within the raw output.
+    Uses a regular expression to capture the first JSON object.
+    """
+    if "generation" in raw_output:
+        gen_str = raw_output["generation"]
+        # Use regex to extract the JSON substring (from the first { to the last })
+        match = re.search(r'\{.*\}', gen_str, re.DOTALL)
+        if match:
+            json_str = match.group(0)
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError as e:
+                raise ValueError("Error parsing JSON from generation string: " + json_str) from e
+        else:
+            print("No value indside")
+    return raw_output
+  
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     """
@@ -122,13 +141,20 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raise ValueError(f"InvokeModel response missing 'body': {bedrock_response}")
     
     raw_response_str = bedrock_response["body"].read().decode("utf-8")
-    print("raw_response_str",raw_response_str)
+    logger.info("Raw response from Bedrock: %s", raw_response_str)
     try:
         raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
-    print("raw_output",raw_output)
-    return raw_output
+
+    try:
+        cleaned_output = extract_json_from_generation(raw_output)
+    except Exception as e:
+        logger.error("Error extracting JSON: %s", e)
+        raise
+
+    logger.info("Cleaned output: %s", cleaned_output)
+    return cleaned_output
     
 
 # For production, assign the Bedrock-based function:
