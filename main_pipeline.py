@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import tweepy
@@ -15,17 +16,20 @@ load_dotenv()
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 # === Twitter API Setup ===
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
-twitter_client = tweepy.Client(bearer_token=TWITTER_BEARER_TOKEN,
-                               consumer_key=TWITTER_API_KEY,
-                               consumer_secret=TWITTER_API_SECRET,
-                               access_token=TWITTER_ACCESS_TOKEN,
-                               access_token_secret=TWITTER_ACCESS_TOKEN_SECRET)
+twitter_client = tweepy.Client(
+    bearer_token=TWITTER_BEARER_TOKEN,
+    consumer_key=TWITTER_API_KEY,
+    consumer_secret=TWITTER_API_SECRET,
+    access_token=TWITTER_ACCESS_TOKEN,
+    access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
+)
 
 # === Embedding & Vector DB Setup ===
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -63,7 +67,6 @@ def embed_and_store(texts, collection_name: str):
     collection.add(ids=ids, documents=texts, embeddings=embeddings)
     logging.info(f"Stored {len(texts)} documents in collection '{collection_name}'.")
 
-
 # === Opinion Quantification Functions ===
 
 # (1) Simulated function for local testing
@@ -78,7 +81,6 @@ def quantify_opinion_simulated(text: str) -> dict:
     }
 
 # (2) Amazon Bedrock Integration with Guardrails using create_guardrail
-
 def extract_json_from_generation(raw_output: dict) -> dict:
     """
     If the output has a 'generation' key containing extra text,
@@ -103,18 +105,14 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     using the built-in Guardrail API (create_guardrail).
 
     The prompt instructs the model to return a JSON object with exactly these keys:
-      - work_flexibility
-      - burnout_risk
-      - remote_work_appeal
-      - productivity_impact
-      - overall_sentiment
+      - work_flexibility, burnout_risk, remote_work_appeal, productivity_impact, overall_sentiment
 
     Each value must be an integer between 1 (low) and 5 (high).
+    If JSON extraction fails, falls back to simulated analysis.
     """
     # Initialize the Bedrock client with a specified region
     bedrock_client = boto3.client("bedrock-runtime", region_name="ap-south-1")
     
-    # Construct the prompt as a single-line string and wrap it in a JSON object
     prompt_text = (
         "Analyze the following text regarding work-life balance. "
         "Return a JSON object with exactly these keys: "
@@ -126,10 +124,9 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     # Wrap the prompt in a JSON object
     body = json.dumps({"prompt": prompt_text})
     
-    # Invoke the Bedrock model using correct, lower-case parameter names
     try:
         bedrock_response = bedrock_client.invoke_model(
-            modelId="meta.llama3-70b-instruct-v1:0",
+            modelId="meta.llama3-70b-instruct-v1:0",  # Replace with a valid model ID
             body=body.encode("utf-8"),
             contentType="application/json"
         )
@@ -141,26 +138,25 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raise ValueError(f"InvokeModel response missing 'body': {bedrock_response}")
     
     raw_response_str = bedrock_response["body"].read().decode("utf-8")
-    print("raw_response_str",raw_response_str)
+    logger.info("Raw response from Bedrock: %s", raw_response_str)
     try:
         raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
-    print("raw_output",raw_output)
-    # Extract the pure JSON from the generation output.
+
     try:
         cleaned_output = extract_json_from_generation(raw_output)
     except Exception as e:
-        logger.error("Error extracting JSON: %s", e)
-        raise
-    print(cleaned_output)
+        logger.warning("Error extracting JSON: %s. Falling back to simulated analysis.", e)
+        return quantify_opinion_simulated(text)
+    logger.info("Cleaned output: %s", cleaned_output)
     return cleaned_output
     
 
 # For production, assign the Bedrock-based function:
 quantify_opinion = quantify_opinion_bedrock_with_guardrails
 # For this demo, we use the simulated function:
-#quantify_opinion = quantify_opinion_simulated
+# quantify_opinion = quantify_opinion_simulated
 
 # === Main Pipeline Function ===
 def pipeline():
@@ -171,10 +167,9 @@ def pipeline():
       - Quantify opinions for each article.
       - Save results to 'opinions.json' in the expected format.
     """
-    # List of article URLs to ingest.
     article_urls = [
         "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement",
-        "https://thehappinessindex.com/blog/importance-work-life-balance/",
+        "https://thehappinessindex.com/blog/importance-work-life-balance/"
     ]
     
     articles_texts = []
@@ -191,7 +186,6 @@ def pipeline():
     else:
         articles_opinions = []
 
-    # Expected output format: a JSON object with an "articles" key containing a list of analysis objects.
     output = {
         "articles": articles_opinions
     }
