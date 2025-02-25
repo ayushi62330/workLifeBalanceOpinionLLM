@@ -135,7 +135,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
             "overall_sentiment"
         ],
         "value_range": {"min": 1, "max": 5}
-    }
+      }
     
     # Validate using the built-in Guardrail API
     print(dir(bedrock_client))
