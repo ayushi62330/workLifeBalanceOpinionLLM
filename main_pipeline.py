@@ -12,8 +12,9 @@ import boto3
 # Load environment variables (e.g., from .env)
 load_dotenv()
 
-# Set up logging
+# Configure logging (define logger globally)
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # === Twitter API Setup ===
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
