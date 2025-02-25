@@ -146,7 +146,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
-    print("raw_input",raw_input)
+    print("raw_output",raw_output)
     # Extract the pure JSON from the generation output.
     try:
         cleaned_output = extract_json_from_generation(raw_output)
