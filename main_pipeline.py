@@ -116,7 +116,7 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     body=body.encode("utf-8"),
     contentType="application/json"
     )
-    
+    print(bedrock_response)
     raw_response_str = bedrock_response["Body"].read().decode("utf-8")
     try:
         raw_response = json.loads(raw_response_str)
