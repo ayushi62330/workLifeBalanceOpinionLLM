@@ -20,12 +20,13 @@ TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+TWITTER_BEARER_TOKEN = AAAAAAAAAAAAAAAAAAAAAHIdzgEAAAAAlYmFM9oDN7dnFZPm2HvlGaI2gQc%3DtNUH8U2zdajSNEbvFD9V61Uy0IySa0eckON20bJdhuXkL77dx7
 
-auth = tweepy.OAuth1UserHandler(
-    TWITTER_API_KEY, TWITTER_API_SECRET,
-    TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET
-)
-twitter_api = tweepy.API(auth)
+twitter_client = tweepy.Client(bearer_token=TWITTER_BEARER_TOKEN,
+                               consumer_key=TWITTER_API_KEY,
+                               consumer_secret=TWITTER_API_SECRET,
+                               access_token=TWITTER_ACCESS_TOKEN,
+                               access_token_secret=TWITTER_ACCESS_TOKEN_SECRET)
 
 # === Embedding & Vector DB Setup ===
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -37,7 +38,7 @@ def ingest_tweets(query: str, max_results: int = 50):
     Ingest tweets matching a query using Twitter API v2 Recent Search endpoint.
     Requires TWITTER_BEARER_TOKEN to be set.
     """
-    response = twitter_api.search_recent_tweets(query=query, max_results=max_results)
+    response = twitter_client.search_recent_tweets(query=query, max_results=max_results)
     tweet_texts = []
     if response.data:
         tweet_texts = [tweet.text for tweet in response.data]
