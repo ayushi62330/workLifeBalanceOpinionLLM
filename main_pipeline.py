@@ -79,7 +79,23 @@ def quantify_opinion_simulated(text: str) -> dict:
 
 # (2) Amazon Bedrock Integration with Guardrails using create_guardrail
 
-
+def extract_json_from_generation(raw_output: dict) -> dict:
+    """
+    If the output has a 'generation' key containing extra text,
+    extract the substring between the first '{' and the last '}' and parse it.
+    """
+    if "generation" in raw_output:
+        gen_str = raw_output["generation"]
+        start = gen_str.find('{')
+        end = gen_str.rfind('}')
+        if start == -1 or end == -1:
+            raise ValueError("Could not find JSON object in generation string.")
+        json_str = gen_str[start:end+1]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError("Error parsing JSON from generation string: " + json_str) from e
+    return raw_output
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     """
@@ -111,23 +127,34 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     body = json.dumps({"prompt": prompt_text})
     
     # Invoke the Bedrock model using correct, lower-case parameter names
-    bedrock_response = bedrock_client.invoke_model(
-    modelId="meta.llama3-70b-instruct-v1:0",
-    body=body.encode("utf-8"),
-    contentType="application/json"
-    )
-    print(bedrock_response)
-    raw_response_str = bedrock_response["body"].read().decode("utf-8")
-    print(raw_response_str)
     try:
-        raw_response = json.loads(raw_response_str)
+        bedrock_response = bedrock_client.invoke_model(
+            modelId="meta.llama3-70b-instruct-v1:0",
+            body=body.encode("utf-8"),
+            contentType="application/json"
+        )
+    except Exception as e:
+        logger.error("Error invoking Bedrock model: %s", e)
+        raise
+
+    if "body" not in bedrock_response:
+        raise ValueError(f"InvokeModel response missing 'body': {bedrock_response}")
+    
+    raw_response_str = bedrock_response["body"].read().decode("utf-8")
+    try:
+        raw_output = json.loads(raw_response_str)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON response from Bedrock: {raw_response_str}") from e
-    print(raw_response)
-  
+        raise ValueError(f"Invalid JSON from Bedrock: {raw_response_str}") from e
 
-    return raw_response
-
+    # Extract the pure JSON from the generation output.
+    try:
+        cleaned_output = extract_json_from_generation(raw_output)
+    except Exception as e:
+        logger.error("Error extracting JSON: %s", e)
+        raise
+    print(cleaned_output)
+    return cleaned_output
+    
 
 # For production, assign the Bedrock-based function:
 quantify_opinion = quantify_opinion_bedrock_with_guardrails
