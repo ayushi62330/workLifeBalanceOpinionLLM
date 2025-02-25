@@ -32,7 +32,7 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 chroma_client = Client()  # Assumes a local/default configuration
 
 # === Data Ingestion Functions ===
-def ingest_tweets(query: str, max_results: int = 10):
+def ingest_tweets(query: str, max_results: int = 5):
     """
     Ingest tweets matching a query using Twitter API v2 Recent Search endpoint.
     Requires TWITTER_BEARER_TOKEN to be set.
