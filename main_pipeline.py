@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 from chromadb import Client  # Ensure chromadb is installed via pip
 from dotenv import load_dotenv
 import boto3
+import re
 
 # Load environment variables (e.g., from .env)
 load_dotenv()
