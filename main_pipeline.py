@@ -124,33 +124,9 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON response from Bedrock: {raw_response_str}") from e
     print(raw_response)
-    try:
-    # Define guardrail parameters for validation
-      guardrail_params = {
-        "desired_keys": [
-            "work_flexibility",
-            "burnout_risk",
-            "remote_work_appeal",
-            "productivity_impact",
-            "overall_sentiment"
-        ],
-        "value_range": {"min": 1, "max": 5}
-      }
-    
-    # Validate using the built-in Guardrail API
-    print(dir(bedrock_client))
-    guard_response = bedrock_client.apply_guardrail(
-        modelOutput=json.dumps(raw_response),
-        guardrailParameters=json.dumps(guardrail_params),
-        contentType="application/json"
-    )
-    guard_response_str = guard_response["Body"].read().decode("utf-8")
-    try:
-        validated_response = json.loads(guard_response_str)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON from Guardrails API: {guard_response_str}") from e
+  
 
-    return validated_response
+    return raw_response
 
 
 # For production, assign the Bedrock-based function:
