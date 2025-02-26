@@ -10,14 +10,14 @@ from chromadb import Client  # Ensure chromadb is installed via pip
 from dotenv import load_dotenv
 import boto3
 
-# Load environment variables (e.g., from .env)
+# to environment variables from .env file
 load_dotenv()
 
-# Set up logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# === Twitter API Setup ===
+#this is for twitter access 
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
@@ -37,10 +37,6 @@ chroma_client = Client()  # Assumes a local/default configuration
 
 # === Data Ingestion Functions ===
 def ingest_tweets(query: str, max_results: int = 50):
-    """
-    Ingest tweets matching a query using Twitter API v2 Recent Search endpoint.
-    Requires TWITTER_BEARER_TOKEN to be set.
-    """
     response = twitter_client.search_recent_tweets(query=query, max_results=max_results)
     tweet_texts = []
     if response.data:
@@ -49,7 +45,6 @@ def ingest_tweets(query: str, max_results: int = 50):
     return tweet_texts
 
 def ingest_article(url: str) -> str:
-    """Scrape an article from a URL using Requests and BeautifulSoup."""
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
     paragraphs = soup.find_all("p")
@@ -57,9 +52,7 @@ def ingest_article(url: str) -> str:
     logging.info(f"Ingested article from {url}.")
     return article_text
 
-# === Embedding & Storage ===
 def embed_and_store(texts, collection_name: str):
-    """Embed texts with a Sentence Transformer and store them in ChromaDB."""
     embeddings = model.encode(texts)
     collection = chroma_client.get_or_create_collection(name=collection_name)
     # Generate unique IDs for each document, e.g., by using their index
@@ -67,9 +60,6 @@ def embed_and_store(texts, collection_name: str):
     collection.add(ids=ids, documents=texts, embeddings=embeddings)
     logging.info(f"Stored {len(texts)} documents in collection '{collection_name}'.")
 
-# === Opinion Quantification Functions ===
-
-# (1) Simulated function for local testing
 def quantify_opinion_simulated(text: str) -> dict:
     """Simulated quantification function returning fixed scores."""
     return {
@@ -82,10 +72,6 @@ def quantify_opinion_simulated(text: str) -> dict:
 
 # (2) Amazon Bedrock Integration with Guardrails using create_guardrail
 def extract_json_from_generation(raw_output: dict) -> dict:
-    """
-    If the output has a 'generation' key containing extra text,
-    extract the substring between the first '{' and the last '}' and parse it.
-    """
     if "generation" in raw_output:
         gen_str = raw_output["generation"]
         start = gen_str.find('{')
@@ -100,17 +86,6 @@ def extract_json_from_generation(raw_output: dict) -> dict:
     return raw_output
 
 def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
-    """
-    Uses Amazon Bedrock to generate opinion scores and then validates the output
-    using the built-in Guardrail API (create_guardrail).
-
-    The prompt instructs the model to return a JSON object with exactly these keys:
-      - work_flexibility, burnout_risk, remote_work_appeal, productivity_impact, overall_sentiment
-
-    Each value must be an integer between 1 (low) and 5 (high).
-    If JSON extraction fails, falls back to simulated analysis.
-    """
-    # Initialize the Bedrock client with a specified region
     bedrock_client = boto3.client("bedrock-runtime", region_name="ap-south-1")
     
     prompt_text = (
@@ -121,7 +96,6 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
         "Each value must be an integer between 1 and 5. "
         f"Text: \"{text}\""
     )
-    # Wrap the prompt in a JSON object
     body = json.dumps({"prompt": prompt_text})
     
     try:
@@ -158,15 +132,8 @@ quantify_opinion = quantify_opinion_bedrock_with_guardrails
 # For this demo, we use the simulated function:
 # quantify_opinion = quantify_opinion_simulated
 
-# === Main Pipeline Function ===
+
 def pipeline():
-    """
-    Run the full pipeline:
-      - Ingest a list of articles.
-      - Generate embeddings and store them in ChromaDB.
-      - Quantify opinions for each article.
-      - Save results to 'opinions.json' in the expected format.
-    """
     article_urls = [
         "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement",
         "https://thehappinessindex.com/blog/importance-work-life-balance/"
