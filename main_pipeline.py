@@ -10,39 +10,11 @@ from chromadb import Client  # Ensure chromadb is installed via pip
 from dotenv import load_dotenv
 import boto3
 
-# to environment variables from .env file
 load_dotenv()
-
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-#this is for twitter access 
-TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
-TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
-TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
-TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
-twitter_client = tweepy.Client(
-    bearer_token=TWITTER_BEARER_TOKEN,
-    consumer_key=TWITTER_API_KEY,
-    consumer_secret=TWITTER_API_SECRET,
-    access_token=TWITTER_ACCESS_TOKEN,
-    access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
-)
-
-# === Embedding & Vector DB Setup ===
 model = SentenceTransformer('all-MiniLM-L6-v2')
-chroma_client = Client()  # Assumes a local/default configuration
-
-# === Data Ingestion Functions ===
-def ingest_tweets(query: str, max_results: int = 50):
-    response = twitter_client.search_recent_tweets(query=query, max_results=max_results)
-    tweet_texts = []
-    if response.data:
-        tweet_texts = [tweet.text for tweet in response.data]
-    logging.info(f"Ingested {len(tweet_texts)} tweets for query '{query}'.")
-    return tweet_texts
+chroma_client = Client()  
 
 def ingest_article(url: str) -> str:
     response = requests.get(url)
@@ -60,17 +32,6 @@ def embed_and_store(texts, collection_name: str):
     collection.add(ids=ids, documents=texts, embeddings=embeddings)
     logging.info(f"Stored {len(texts)} documents in collection '{collection_name}'.")
 
-def quantify_opinion_simulated(text: str) -> dict:
-    """Simulated quantification function returning fixed scores."""
-    return {
-        "work_flexibility": 4,
-        "burnout_risk": 2,
-        "remote_work_appeal": 5,
-        "productivity_impact": 4,
-        "overall_sentiment": 4
-    }
-
-# (2) Amazon Bedrock Integration with Guardrails using create_guardrail
 def extract_json_from_generation(raw_output: dict) -> dict:
     if "generation" in raw_output:
         gen_str = raw_output["generation"]
@@ -85,7 +46,7 @@ def extract_json_from_generation(raw_output: dict) -> dict:
             raise ValueError("Error parsing JSON from generation string: " + json_str) from e
     return raw_output
 
-def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
+def quantify_opinion(text: str) -> dict:
     bedrock_client = boto3.client("bedrock-runtime", region_name="ap-south-1")
     
     prompt_text = (
@@ -126,12 +87,6 @@ def quantify_opinion_bedrock_with_guardrails(text: str) -> dict:
     logger.info("Cleaned output: %s", cleaned_output)
     return cleaned_output
     
-
-# For production, assign the Bedrock-based function:
-quantify_opinion = quantify_opinion_bedrock_with_guardrails
-# For this demo, we use the simulated function:
-# quantify_opinion = quantify_opinion_simulated
-
 
 def pipeline():
     article_urls = [
