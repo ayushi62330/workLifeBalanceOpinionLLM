@@ -82,8 +82,7 @@ def quantify_opinion_bedrock(text: str) -> dict:
     try:
         cleaned_output = extract_json_from_generation(raw_output)
     except Exception as e:
-        logger.warning("Error extracting JSON from generation", e)
-        
+        logger.warning("Error extracting JSON from generation", e) 
     logger.info("Cleaned output: %s", cleaned_output)
     return cleaned_output
 
