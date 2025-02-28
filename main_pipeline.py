@@ -46,7 +46,7 @@ def extract_json_from_generation(raw_output: dict) -> dict:
             raise ValueError("Error parsing JSON from generation string: " + json_str) from e
     return raw_output
 
-def quantify_opinion(text: str) -> dict:
+def quantify_opinion_bedrock(text: str) -> dict:
     bedrock_client = boto3.client("bedrock-runtime", region_name="ap-south-1")
     
     prompt_text = (
@@ -86,7 +86,8 @@ def quantify_opinion(text: str) -> dict:
         
     logger.info("Cleaned output: %s", cleaned_output)
     return cleaned_output
-    
+
+quantify_opinion = quantify_opinion_bedrock    
 
 def pipeline():
     article_urls = [
