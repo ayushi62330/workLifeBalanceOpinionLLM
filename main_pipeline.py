@@ -91,7 +91,10 @@ def quantify_opinion(text: str) -> dict:
 def pipeline():
     article_urls = [
         "https://hbr.org/2021/01/work-life-balance-is-a-cycle-not-an-achievement",
-        "https://thehappinessindex.com/blog/importance-work-life-balance/"
+        "https://thehappinessindex.com/blog/importance-work-life-balance/",
+        "https://auroratrainingadvantage.com/articles/importance-of-work-life-balance/",
+        "https://www.businessnewsdaily.com/5244-improve-work-life-balance-today.html",
+        "https://www.bbc.com/worklife/article/20230227-what-does-work-life-balance-mean-in-a-changed-work-world"
     ]
     
     articles_texts = []
